@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Routine</title>
+<style>
+  :root {
+    --bg: #FBF6EF;
+    --card: #F5EEE2;
+    --card-soft: #F0E4D4;
+    --line: #E8DCC8;
+    --ink: #2B2420;
+    --muted: #A8895F;
+    --muted-soft: #C2A878;
+    --accent: #D96C3F;
+    --done: #7BA378;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .app {
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    position: relative;
+    background: var(--bg);
+  }
+
+  /* Header */
+  .header {
+    padding: 28px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(180deg, var(--bg) 85%, rgba(251,246,239,0));
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 500;
+    color: var(--muted);
+    margin: 0;
+  }
+  .title {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 2px 0 0;
+    font-family: Georgia, serif;
+    color: var(--ink);
+  }
+  .clock {
+    text-align: right;
+  }
+  .clock .time {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .clock .date {
+    font-size: 11px;
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .notif-btn {
+    margin-top: 12px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    cursor: pointer;
+    text-align: center;
+  }
+  .notif-btn.denied { background: #B0473F; }
+  .notif-btn:active { opacity: 0.8; }
+  .notif-btn.hidden { display: none; }
+
+  .progress-bar {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 12px;
+    padding: 10px 16px;
+    background: var(--card-soft);
+  }
+  .progress-bar .label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .progress-bar .count {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .progress-bar.hidden { display: none; }
+
+  /* Timeline */
+  .timeline-wrap {
+    padding: 0 20px 112px;
+  }
+  .empty-state {
+    margin-top: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 24px;
+  }
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    background: var(--card-soft);
+    color: var(--accent);
+  }
+  .empty-state .e-title {
+    font-weight: 600;
+    margin: 0;
+  }
+  .empty-state .e-sub {
+    font-size: 14px;
+    margin: 4px 0 0;
+    color: var(--muted);
+  }
+
+  .timeline {
+    margin-top: 8px;
+    position: relative;
+  }
+  .timeline-line {
+    position: absolute;
+    left: 19px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+  }
+  .task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .task-bullet {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    position: relative;
+    z-index: 10;
+    font-size: 17px;
+  }
+  .task-bullet.next { background: var(--accent); border: none; color: #fff; }
+  .task-bullet.done { background: var(--done); border: none; color: #fff; }
+
+  .task-card {
+    flex: 1;
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--card);
+    border: 1.5px solid transparent;
+    transition: opacity 0.2s;
+  }
+  .task-card.next { background: #fff; border-color: var(--accent); }
+  .task-card.inactive { opacity: 0.4; }
+  .task-card.past { opacity: 0.55; }
+  .task-card.done { opacity: 0.6; }
+
+  .task-main {
+    min-width: 0;
+    flex: 1;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+  }
+  .task-label {
+    font-weight: 600;
+    font-size: 15px;
+    margin: 0;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .task-label.strike { text-decoration: line-through; }
+  .task-time {
+    font-size: 12px;
+    font-weight: 500;
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .task-time.next-color { color: var(--accent); }
+  .task-tag { margin-left: 6px; }
+
+  .remove-btn {
+    flex-shrink: 0;
+    padding: 6px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-soft);
+    display: flex;
+    align-items: center;
+  }
+  .remove-btn:active { opacity: 0.6; }
+
+  /* Add button */
+  .add-btn {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(calc(-50% + 0px));
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    box-shadow: 0 8px 20px rgba(217,108,63,0.35);
+    cursor: pointer;
+    z-index: 30;
+    font-size: 28px;
+    max-width: 420px;
+  }
+  @media (min-width: 460px) {
+    .add-btn { left: auto; right: calc(50% - 190px); transform: none; }
+  }
+  .add-btn:active { transform: scale(0.95); }
+  @media (min-width: 460px) {
+    .add-btn:active { transform: scale(0.95); }
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    width: 88%;
+    max-width: 340px;
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--ink);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+  }
+  .toast-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: #fff;
+  }
+  .toast-text { min-width: 0; }
+  .toast-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--bg);
+  }
+  .toast-sub {
+    font-size: 14px;
+    margin: 2px 0 0;
+    color: var(--line);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .toast-close {
+    margin-left: auto;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  /* Sheet / modal */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(43,36,32,0.4);
+  }
+  .overlay.hidden { display: none; }
+  .sheet {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 24px 24px 0 0;
+    padding: 20px 20px 28px;
+    max-height: 85vh;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .sheet-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .sheet-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .text-input, .time-input {
+    width: 100%;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    border: none;
+    outline: none;
+    background: var(--card-soft);
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .time-input { font-variant-numeric: tabular-nums; }
+
+  .icon-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .icon-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    background: var(--card-soft);
+    border: none;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .icon-chip.active { background: var(--accent); color: #fff; }
+  .icon-chip span { font-size: 10px; font-weight: 500; color: var(--muted); }
+  .icon-chip.active span { color: #fff; }
+  .icon-chip .glyph { font-size: 18px; line-height: 1; }
+
+  .day-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+  .day-chip {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-soft);
+    color: var(--muted);
+    border: none;
+    cursor: pointer;
+  }
+  .day-chip.active { background: var(--ink); color: var(--bg); }
+
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .submit-btn:active:not(:disabled) { opacity: 0.85; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-row">
+        <div>
+          <p class="eyebrow">Today</p>
+          <h1 class="title">My Routine</h1>
+        </div>
+        <div class="clock">
+          <p class="time" id="clockTime">--:--</p>
+          <p class="date" id="clockDate"></p>
+        </div>
+      </div>
+
+      <button class="notif-btn hidden" id="notifBtn">🔔 Turn on notifications</button>
+
+      <div class="progress-bar hidden" id="progressBar">
+        <span class="label">Today's progress</span>
+        <span class="count" id="progressCount">0/0 done</span>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-wrap">
+      <div class="empty-state hidden" id="emptyState">
+        <div class="empty-icon">⏰</div>
+        <p class="e-title">No tasks yet</p>
+        <p class="e-sub">Tap the button below to add your first reminder — gym, study, or medicine time.</p>
+      </div>
+
+      <div class="timeline hidden" id="timeline">
+        <div class="timeline-line"></div>
+        <div class="task-list" id="taskList"></div>
+      </div>
+    </div>
+
+    <!-- Add button -->
+    <button class="add-btn" id="addBtn">+</button>
+
+    <!-- Toast -->
+    <div class="toast" id="toast" style="display:none;">
+      <div class="toast-icon">🔔</div>
+      <div class="toast-text">
+        <p class="toast-title" id="toastTitle"></p>
+        <p class="toast-sub" id="toastSub"></p>
+      </div>
+      <button class="toast-close" id="toastClose">✕</button>
+    </div>
+
+    <!-- Add task sheet -->
+    <div class="overlay hidden" id="overlay">
+      <div class="sheet">
+        <div class="sheet-header">
+          <h2 class="sheet-title">New Reminder</h2>
+          <button class="sheet-close" id="sheetClose">✕</button>
+        </div>
+
+        <label class="field-label">What do you need to do?</label>
+        <input type="text" class="text-input" id="labelInput" placeholder="e.g. Go to gym, Take medicine" />
+
+        <label class="field-label">At what time?</label>
+        <input type="time" class="time-input" id="timeInput" value="08:00" />
+
+        <label class="field-label">Choose an icon</label>
+        <div class="icon-row" id="iconRow"></div>
+
+        <label class="field-label">Repeat on which days?</label>
+        <div class="day-row" id="dayRow"></div>
+
+        <button class="submit-btn" id="submitBtn">✓ Add reminder</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const ICONS = {
+    gym: "🏋️", study: "📖", medicine: "💊", food: "☕", sleep: "🌙", custom: "⏰"
+  };
+  const ICON_OPTIONS = [
+    { key: "gym", label: "Gym" },
+    { key: "study", label: "Study" },
+    { key: "medicine", label: "Medicine" },
+    { key: "food", label: "Food" },
+    { key: "sleep", label: "Sleep" },
+    { key: "custom", label: "General" }
+  ];
+  const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
+  const STORAGE_KEY = "routine-tasks-html-v1";
+
+  let tasks = [];
+  let firedToday = {};
+  let form = { label: "", time: "08:00", icon: "custom", days: [0,1,2,3,4,5,6] };
+  let toastTimer = null;
+  let audioCtx = null;
+
+  // ---------- storage ----------
+  function loadTasks() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) tasks = JSON.parse(raw);
+    } catch (e) { tasks = []; }
+  }
+  function saveTasks() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); } catch (e) {}
+  }
+
+  // ---------- helpers ----------
+  function pad(n) { return n.toString().padStart(2, "0"); }
+  function timeToMinutes(t) {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  }
+  function minutesToLabel(mins) {
+    let h = Math.floor(mins / 60) % 24;
+    const m = mins % 60;
+    const period = h >= 12 ? "PM" : "AM";
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return `${h12}:${pad(m)} ${period}`;
+  }
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+  function dateKey(d) { return d.toDateString(); }
+
+  function playChime() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const playTone = (freq, start, dur) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, audioCtx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + start + 0.02);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + start + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + start);
+        osc.stop(audioCtx.currentTime + start + dur);
+      };
+      playTone(880, 0, 0.25);
+      playTone(1175, 0.18, 0.3);
+    } catch (e) {}
+  }
+
+  // ---------- notifications ----------
+  const notifBtn = document.getElementById("notifBtn");
+  function refreshNotifBtn() {
+    if (typeof Notification === "undefined") {
+      notifBtn.classList.add("hidden");
+      return;
+    }
+    if (Notification.permission === "granted") {
+      notifBtn.classList.add("hidden");
+      notifBtn.classList.remove("denied");
+    } else if (Notification.permission === "denied") {
+      notifBtn.classList.remove("hidden");
+      notifBtn.classList.add("denied");
+      notifBtn.textContent = "🔕 Notifications blocked — enable in browser settings";
+    } else {
+      notifBtn.classList.remove("hidden");
+      notifBtn.classList.remove("denied");
+      notifBtn.textContent = "🔔 Turn on notifications";
+    }
+  }
+  async function askForNotifPermission() {
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+    refreshNotifBtn();
+  }
+  notifBtn.addEventListener("click", async () => {
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission === "denied") {
+      showToast("Notifications are blocked", "Turn them on in your browser's site settings to get alerts outside the tab.");
+      return;
+    }
+    await Notification.requestPermission();
+    refreshNotifBtn();
+  });
+
+  // ---------- toast ----------
+  const toastEl = document.getElementById("toast");
+  const toastTitle = document.getElementById("toastTitle");
+  const toastSub = document.getElementById("toastSub");
+  document.getElementById("toastClose").addEventListener("click", hideToast);
+  function showToast(title, sub) {
+    toastTitle.textContent = title;
+    toastSub.textContent = sub;
+    toastEl.style.display = "flex";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 6000);
+  }
+  function hideToast() { toastEl.style.display = "none"; }
+
+  // ---------- clock + task firing ----------
+  function tick() {
+    const now = new Date();
+    const hh = pad(now.getHours());
+    const mm = pad(now.getMinutes());
+    document.getElementById("clockTime").textContent = minutesToLabel(now.getHours() * 60 + now.getMinutes());
+    document.getElementById("clockDate").textContent = now.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
+
+    const todayDow = now.getDay();
+    const todayStr = dateKey(now);
+    const currentHM = `${hh}:${mm}`;
+
+    tasks.forEach((task) => {
+      if (!task.days.includes(todayDow)) return;
+      if (task.time !== currentHM) return;
+      const fireKey = `${task.id}-${todayStr}`;
+      if (firedToday[fireKey]) return;
+      firedToday[fireKey] = true;
+
+      playChime();
+
+      const todayTasks = tasks.filter((t) => t.days.includes(todayDow));
+      const doneCount = todayTasks.filter((t) => (t.completedDates || []).includes(todayStr)).length;
+      const totalCount = todayTasks.length;
+      const remaining = totalCount - doneCount;
+      const progressLine = remaining > 0
+        ? `${doneCount}/${totalCount} done, hurry up baby 💪`
+        : `All ${totalCount} tasks done today! 🎉`;
+
+      showToast(task.label, progressLine);
+
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        try {
+          new Notification(`Time's up: ${task.label} ⏰`, { body: progressLine, tag: task.id });
+        } catch (e) {}
+      }
+    });
+
+    render();
+  }
+
+  // ---------- render ----------
+  function render() {
+    const now = new Date();
+    const todayDow = now.getDay();
+    const todayStr = dateKey(now);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const sorted = [...tasks].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+    const todayTasks = sorted.filter((t) => t.days.includes(todayDow));
+    const doneCount = todayTasks.filter((t) => (t.completedDates || []).includes(todayStr)).length;
+    const totalCount = todayTasks.length;
+
+    const progressBar = document.getElementById("progressBar");
+    if (totalCount > 0) {
+      progressBar.classList.remove("hidden");
+      document.getElementById("progressCount").textContent = `${doneCount}/${totalCount} done`;
+    } else {
+      progressBar.classList.add("hidden");
+    }
+
+    const upcoming = todayTasks
+      .filter((t) => timeToMinutes(t.time) >= currentMinutes && !(t.completedDates || []).includes(todayStr))
+      .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+    const nextId = upcoming[0] ? upcoming[0].id : null;
+
+    const emptyState = document.getElementById("emptyState");
+    const timelineEl = document.getElementById("timeline");
+    const listEl = document.getElementById("taskList");
+
+    if (sorted.length === 0) {
+      emptyState.classList.remove("hidden");
+      timelineEl.classList.add("hidden");
+      return;
+    }
+    emptyState.classList.add("hidden");
+    timelineEl.classList.remove("hidden");
+
+    listEl.innerHTML = "";
+    sorted.forEach((task) => {
+      const activeToday = task.days.includes(todayDow);
+      const isDone = (task.completedDates || []).includes(todayStr);
+      const isPast = activeToday && timeToMinutes(task.time) < currentMinutes;
+      const isNext = task.id === nextId;
+
+      const row = document.createElement("div");
+      row.className = "task-row";
+
+      const bullet = document.createElement("div");
+      bullet.className = "task-bullet" + (isDone ? " done" : isNext ? " next" : "");
+      bullet.textContent = isDone ? "✓" : (ICONS[task.icon] || "⏰");
+      row.appendChild(bullet);
+
+      const card = document.createElement("div");
+      card.className = "task-card" +
+        (isNext && !isDone ? " next" : "") +
+        (!activeToday ? " inactive" : isDone ? " done" : (isPast && !isNext ? " past" : ""));
+
+      const main = document.createElement("button");
+      main.className = "task-main";
+      main.addEventListener("click", () => toggleComplete(task.id));
+
+      const labelEl = document.createElement("p");
+      labelEl.className = "task-label" + ((isDone || (isPast && !isNext)) ? " strike" : "");
+      labelEl.textContent = task.label;
+
+      const timeEl = document.createElement("p");
+      timeEl.className = "task-time" + (isNext && !isDone ? " next-color" : "");
+      let timeText = minutesToLabel(timeToMinutes(task.time));
+      timeEl.textContent = timeText;
+      if (isNext && !isDone) {
+        const tag = document.createElement("span");
+        tag.className = "task-tag";
+        tag.textContent = "· Up next";
+        timeEl.appendChild(tag);
+      } else if (isDone) {
+        const tag = document.createElement("span");
+        tag.className = "task-tag";
+        tag.textContent = "· Done ✓";
+        timeEl.appendChild(tag);
+      }
+
+      main.appendChild(labelEl);
+      main.appendChild(timeEl);
+      card.appendChild(main);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "remove-btn";
+      removeBtn.innerHTML = "🗑";
+      removeBtn.setAttribute("aria-label", "Remove task");
+      removeBtn.addEventListener("click", (e) => { e.stopPropagation(); removeTask(task.id); });
+      card.appendChild(removeBtn);
+
+      row.appendChild(card);
+      listEl.appendChild(row);
+    });
+  }
+
+  // ---------- task actions ----------
+  function addTask() {
+    if (!form.label.trim()) return;
+    const newTask = {
+      id: uid(),
+      label: form.label.trim(),
+      time: form.time,
+      icon: form.icon,
+      days: [...form.days],
+      completedDates: []
+    };
+    tasks.push(newTask);
+    saveTasks();
+    closeSheet();
+    render();
+  }
+  function removeTask(id) {
+    tasks = tasks.filter((t) => t.id !== id);
+    saveTasks();
+    render();
+  }
+  function toggleComplete(id) {
+    const today = dateKey(new Date());
+    tasks = tasks.map((t) => {
+      if (t.id !== id) return t;
+      const cd = t.completedDates || [];
+      const isDone = cd.includes(today);
+      return { ...t, completedDates: isDone ? cd.filter((d) => d !== today) : [...cd, today] };
+    });
+    saveTasks();
+    render();
+  }
+
+  // ---------- sheet (add form) ----------
+  const overlay = document.getElementById("overlay");
+  const labelInput = document.getElementById("labelInput");
+  const timeInput = document.getElementById("timeInput");
+  const iconRow = document.getElementById("iconRow");
+  const dayRow = document.getElementById("dayRow");
+  const submitBtn = document.getElementById("submitBtn");
+
+  function resetForm() {
+    form = { label: "", time: "08:00", icon: "custom", days: [0,1,2,3,4,5,6] };
+    labelInput.value = "";
+    timeInput.value = "08:00";
+    renderIconRow();
+    renderDayRow();
+    updateSubmitState();
+  }
+
+  function renderIconRow() {
+    iconRow.innerHTML = "";
+    ICON_OPTIONS.forEach(({ key, label }) => {
+      const chip = document.createElement("button");
+      chip.className = "icon-chip" + (form.icon === key ? " active" : "");
+      chip.innerHTML = `<span class="glyph">${ICONS[key]}</span><span>${label}</span>`;
+      chip.addEventListener("click", () => { form.icon = key; renderIconRow(); });
+      iconRow.appendChild(chip);
+    });
+  }
+
+  function renderDayRow() {
+    dayRow.innerHTML = "";
+    DAY_LETTERS.forEach((letter, i) => {
+      const chip = document.createElement("button");
+      chip.className = "day-chip" + (form.days.includes(i) ? " active" : "");
+      chip.textContent = letter;
+      chip.addEventListener("click", () => {
+        if (form.days.includes(i)) form.days = form.days.filter((d) => d !== i);
+        else form.days = [...form.days, i].sort();
+        renderDayRow();
+        updateSubmitState();
+      });
+      dayRow.appendChild(chip);
+    });
+  }
+
+  function updateSubmitState() {
+    submitBtn.disabled = !form.label.trim() || form.days.length === 0;
+  }
+
+  labelInput.addEventListener("input", (e) => { form.label = e.target.value; updateSubmitState(); });
+  timeInput.addEventListener("input", (e) => { form.time = e.target.value; });
+  submitBtn.addEventListener("click", addTask);
+
+  function openSheet() {
+    resetForm();
+    overlay.classList.remove("hidden");
+  }
+  function closeSheet() {
+    overlay.classList.add("hidden");
+  }
+  document.getElementById("addBtn").addEventListener("click", openSheet);
+  document.getElementById("sheetClose").addEventListener("click", closeSheet);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeSheet(); });
+
+  // ---------- init ----------
+  loadTasks();
+  refreshNotifBtn();
+  askForNotifPermission();
+  render();
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
